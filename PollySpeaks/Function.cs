@@ -51,13 +51,12 @@ namespace PollySpeaks
         /// </summary>
         /// <param name="input"></param>
         /// <param name="context"></param>
-        /// <returns></returns>
+        /// <returns>The URL that was sent over. Will return Input is empty if there is an issue with the payload.</returns>
         public async Task<string> FunctionHandler(GhostPayload input, ILambdaContext context)
         {
             if (string.IsNullOrEmpty(input.text))
             {
                 return "Input is empty";
-
             }
 
             input.text = input.text.TrimEnd("/".ToCharArray());
