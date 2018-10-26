@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Amazon;
-using Amazon.Lambda;
 using Amazon.Lambda.Core;
 using Amazon.Polly;
 using Amazon.Polly.Model;
@@ -54,7 +52,7 @@ namespace PollySpeaks
         /// <param name="input"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        public async Task<string> FunctionHandler(APIGatewayEvents input, ILambdaContext context)
+        public async Task<string> FunctionHandler(GhostPayload input, ILambdaContext context)
         {
             if (string.IsNullOrEmpty(input.text))
             {
@@ -94,9 +92,7 @@ namespace PollySpeaks
                 };
 
                 PutObjectResponse response1 = await S3Client.PutObjectAsync(putRequest1);
-            }
-
-        
+            }        
 
             return input.text;
         }
