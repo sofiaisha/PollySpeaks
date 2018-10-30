@@ -30,20 +30,18 @@ namespace PollySpeaks
         private const string bucketName = "pollyspeaks";
         private static readonly RegionEndpoint awsRegion = RegionEndpoint.EUWest1;
 
-        private HtmlAgilityPack.HtmlWeb AglityPackWeb;
+        private readonly HtmlAgilityPack.HtmlWeb AglityPackWeb =  new HtmlAgilityPack.HtmlWeb();
     
         public Function()
         {
             S3Client = new AmazonS3Client(awsRegion);
             PollyClient = new AmazonPollyClient(awsRegion);
-            AglityPackWeb  = new HtmlAgilityPack.HtmlWeb();
         }
 
-        public Function(IAmazonS3 s3Client, IAmazonPolly pollyClient, HtmlAgilityPack.HtmlWeb aglityPackWeb)
+        public Function(IAmazonS3 s3Client, IAmazonPolly pollyClient)
         {
             this.PollyClient = pollyClient;
             this.S3Client = s3Client;
-            AglityPackWeb = aglityPackWeb;
         }
 
         /// <summary>
@@ -51,12 +49,12 @@ namespace PollySpeaks
         /// </summary>
         /// <param name="input"></param>
         /// <param name="context"></param>
-        /// <returns>The URL that was sent over. Will return Input is empty if there is an issue with the payload.</returns>
-        public async Task<string> FunctionHandler(GhostPayload input, ILambdaContext context)
+        /// <returns>True or false depending in success</returns>
+        public async Task<bool> FunctionHandler(GhostPayload input, ILambdaContext context)
         {
             if (string.IsNullOrEmpty(input.text))
             {
-                return "Input is empty";
+                return false;
             }
 
             input.text = input.text.TrimEnd("/".ToCharArray());
@@ -90,15 +88,23 @@ namespace PollySpeaks
 
                 };
 
-                PutObjectResponse response1 = await S3Client.PutObjectAsync(putRequest1);
-            }        
-
-            return input.text;
+                await S3Client.PutObjectAsync(putRequest1);
+ 
+            }
+            return true;
         }
 
-        public (string, string) GetTextFromWebsite(string url)
+        public (string, string) GetTextFromWebsite(string urlOrHtml)
         {
-            HtmlAgilityPack.HtmlDocument doc = this.AglityPackWeb.Load(url);
+            HtmlAgilityPack.HtmlDocument doc;
+
+            if (urlOrHtml.StartsWith("http")){
+                doc = this.AglityPackWeb.Load(urlOrHtml);
+            }
+            else {
+                doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(urlOrHtml);
+            }
 
             var title = doc.DocumentNode.SelectNodes("//h1[@class='post-full-title']")[0].InnerText;
             var document = doc.DocumentNode.SelectSingleNode("//div[@class='post-content']").InnerText; 
@@ -116,7 +122,7 @@ namespace PollySpeaks
                 {
                     var tempNumber = v;
                     // Find the last space.
-                    while (!(concatstring.Substring(tempNumber - 2, 1) == " "))
+                    while (concatstring.Substring(tempNumber - 2, 1) != " ")
                     {
                         tempNumber--;
                     }

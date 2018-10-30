@@ -1,61 +1,53 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
 using Xunit;
-using Amazon.Lambda.Core;
 using Amazon.Lambda.TestUtilities;
-using PollySpeaks;
-using Newtonsoft.Json;
 using Moq;
 using Amazon.Polly;
 using Amazon.S3;
-using Amazon.S3.Model;
 using Amazon.Polly.Model;
-using Amazon;
+using System.IO;
+using System.Text;
 
 namespace PollySpeaks.Tests
 {
     public class FunctionTest
     {
         [Fact]
-        public async void TestToProcessGhost()
+        public async Task TestToProcessGhost()
         {
             var mockPolly = new Mock<IAmazonPolly>();
             var mockS3 = new Mock<IAmazonS3>();
-            var mockHtmlWeb = new Mock<HtmlAgilityPack.HtmlWeb>();
+            var speechResponse = new SynthesizeSpeechResponse();
+            speechResponse.AudioStream = new MemoryStream(Encoding.UTF8.GetBytes("whatever"));
+
 
             mockPolly.Setup(m => m.SynthesizeSpeechAsync(It.IsAny<SynthesizeSpeechRequest>(), It.IsAny<System.Threading.CancellationToken>()))
-                  .ReturnsAsync(new SynthesizeSpeechResponse());
+                  .ReturnsAsync(speechResponse);
+            
+            var expectedurl = "<h1 class='post-full-title'>Test Title</h1><div class='post-content'>Test Body</div>";
 
-            var expectedurl = "https://thebeebs.co.uk/speaking/";
             var payload = new GhostPayload { text = expectedurl };
 
-            var function = new Function(mockS3.Object, mockPolly.Object, mockHtmlWeb.Object);
+            var function = new Function(mockS3.Object, mockPolly.Object);
             var context = new TestLambdaContext();
-            string actual = await function.FunctionHandler(payload, context);
+            bool actual = await function.FunctionHandler(payload, context);
+
+            Assert.True(actual);
 
         }
 
-        [Fact]
-        public async void IntegrationTestToProcessGhost()
+        [Fact(Skip = "This is an Integration test")]
+        public async Task IntegrationTestToProcessGhost()
         {
-            var bucketRegion = RegionEndpoint.EUWest1;
-            var S3Client = new AmazonS3Client(bucketRegion);
-            
-            var mockHtmlWeb = new Mock<HtmlAgilityPack.HtmlWeb>();
-
-            Amazon.RegionEndpoint AWSRegion = Amazon.RegionEndpoint.EUWest1;
-            var PollyClient = new AmazonPollyClient(AWSRegion);
-
             var expectedurl = "https://thebeebs.co.uk/being-cool-isnt-an-objective";
             var payload = new GhostPayload { text = expectedurl };
 
             var function = new Function();
             var context = new TestLambdaContext();
-            string actual = await function.FunctionHandler(payload, context);
-
+            bool actual = await function.FunctionHandler(payload, context);
+            Assert.True(actual);
         }
 
         [Fact]
@@ -63,15 +55,15 @@ namespace PollySpeaks.Tests
         {
             var mockPolly = new Mock<IAmazonPolly>();
             var mockS3 = new Mock<IAmazonS3>();
-            var mockHtmlWeb = new Mock<HtmlAgilityPack.HtmlWeb>();
-            var Function = new Function(mockS3.Object, mockPolly.Object, mockHtmlWeb.Object);
 
-            var url = "https://thebeebs.co.uk/speaking/";
+            var Function = new Function(mockS3.Object, mockPolly.Object);
 
-            var actual = Function.GetTextFromWebsite(url);
+            var expectedurl = "<h1 class='post-full-title'>Test Title</h1><div class='post-content'>Test Body</div>";
+
+            var actual = Function.GetTextFromWebsite(expectedurl);
          
-            Assert.Contains("Speaking", actual.Item1);
-            Assert.Contains("happy to speak at pretty", actual.Item2);
+            Assert.Contains("Test Title", actual.Item1);
+            Assert.Contains("Test Body", actual.Item2);
         }
 
         [Fact]
