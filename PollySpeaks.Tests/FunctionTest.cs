@@ -9,6 +9,7 @@ using Amazon.S3;
 using Amazon.Polly.Model;
 using System.IO;
 using System.Text;
+using System;
 
 namespace PollySpeaks.Tests
 {
@@ -81,6 +82,26 @@ namespace PollySpeaks.Tests
             Assert.Equal(7, actual.Count);
             Assert.EndsWith("hello ", actual.Last());
             Assert.EndsWith("hello ", actual.First());
+        }
+
+        [Fact]
+        public async Task CallFucntionWithEmptyStringPayload()
+        {
+            var function = new Function();
+            var context = new TestLambdaContext();
+            var payload = new GhostPayload { text = string.Empty };
+
+            await Assert.ThrowsAsync<ArgumentException>(() => function.FunctionHandler(payload, context));         
+        }
+
+        [Fact]
+        public async Task CallFucntionWithEmptyNullPayload()
+        {
+            var function = new Function();
+            var context = new TestLambdaContext();
+            var payload = new GhostPayload { text = null };
+
+            await Assert.ThrowsAsync<ArgumentException>(() => function.FunctionHandler(payload, context));
         }
 
         [Fact]

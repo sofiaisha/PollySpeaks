@@ -49,12 +49,12 @@ namespace PollySpeaks
         /// </summary>
         /// <param name="input"></param>
         /// <param name="context"></param>
-        /// <returns>True or false depending in success</returns>
+        /// <returns>True or false depending on success</returns>
         public async Task<bool> FunctionHandler(GhostPayload input, ILambdaContext context)
         {
             if (string.IsNullOrEmpty(input.text))
             {
-                return false;
+                throw new ArgumentException("The input.text value of the GhostPayload should not be empty");
             }
 
             input.text = input.text.TrimEnd("/".ToCharArray());
@@ -85,11 +85,9 @@ namespace PollySpeaks
                     BucketName = bucketName,
                     Key = $"{itemName}.mp3",
                     InputStream = output
-
                 };
 
-                await S3Client.PutObjectAsync(putRequest1);
- 
+                await S3Client.PutObjectAsync(putRequest1); 
             }
             return true;
         }
@@ -135,7 +133,7 @@ namespace PollySpeaks
                     list.Add(concatstring);
                     concatstring = "";
                 }
-            }            
+            }           
 
             return list;
         }
